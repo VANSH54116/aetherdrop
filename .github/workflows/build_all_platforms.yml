@@ -1,0 +1,347 @@
+name: Build All Platforms & Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag Name (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  # =========================================================================
+  # 1. Android APK Build (ubuntu-latest)
+  # =========================================================================
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aetherdrop_app
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build Android Release APK
+        run: flutter build apk --release
+
+      - name: Rename Output to AetherDrop-Android.apk
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk AetherDrop-Android.apk
+          ls -lh AetherDrop-Android.apk
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AetherDrop-Android
+          path: aetherdrop_app/AetherDrop-Android.apk
+          if-no-files-found: error
+
+  # =========================================================================
+  # 2. Windows Installer Build (windows-latest)
+  # =========================================================================
+  build-windows:
+    name: Build Windows Setup Installer
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: aetherdrop_app
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Enable Windows Desktop Support
+        run: flutter config --enable-windows-desktop
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build Windows Release Executable
+        run: flutter build windows --release
+
+      - name: Package with Inno Setup into Single .exe Installer
+        shell: pwsh
+        run: |
+          # 1. Locate Inno Setup Compiler (ISCC)
+          $iscc = "iscc"
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) {
+            $defaultInno = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+            if (Test-Path $defaultInno) {
+              $iscc = $defaultInno
+            } else {
+              Write-Host "Inno Setup not detected in default path; installing via Chocolatey..."
+              choco install innosetup -y --no-progress
+              $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+            }
+          }
+          Write-Host "Using Inno Setup compiler: $iscc"
+
+          # 2. Locate built release folder (handle x64 / runner paths)
+          $releasePath = "build\windows\x64\runner\Release"
+          if (-not (Test-Path $releasePath)) {
+            $releasePath = "build\windows\runner\Release"
+          }
+          $absReleasePath = (Resolve-Path $releasePath).Path
+          Write-Host "Source directory: $absReleasePath"
+
+          # 3. Determine release version
+          $tag = "${{ github.event.inputs.tag_name || github.ref_name }}"
+          $ver = ($tag -replace '^[^\d]+', '')
+          if (-not $ver) { $ver = "1.0.0" }
+          Write-Host "Installer Version: $ver"
+
+          # 4. Compile Inno Setup Script
+          & $iscc "/DSourceDir=$absReleasePath" "/DAppVersion=$ver" "/O$PWD" windows\installer.iss
+
+          # 5. Verify standalone installer output
+          if (-not (Test-Path "AetherDrop-Windows-Setup.exe")) {
+            Write-Error "AetherDrop-Windows-Setup.exe was not created!"
+            exit 1
+          }
+          Write-Host "AetherDrop-Windows-Setup.exe compiled successfully!"
+          Get-Item "AetherDrop-Windows-Setup.exe" | Format-List Name, Length
+
+      - name: Upload Windows Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AetherDrop-Windows-Setup
+          path: aetherdrop_app/AetherDrop-Windows-Setup.exe
+          if-no-files-found: error
+
+  # =========================================================================
+  # 3. macOS DMG Build (macos-latest)
+  # =========================================================================
+  build-macos:
+    name: Build macOS DMG
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: aetherdrop_app
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Enable macOS Desktop Support
+        run: flutter config --enable-macos-desktop
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build macOS Release
+        run: flutter build macos --release
+
+      - name: Package AetherDrop.app into Native Apple Disk Image (.dmg)
+        run: |
+          # 1. Locate the built .app bundle
+          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app" -maxdepth 1 | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: No .app bundle found in build/macos/Build/Products/Release"
+            exit 1
+          fi
+          echo "Found compiled macOS bundle: $APP_PATH"
+
+          # 2. Stage DMG directory with AetherDrop.app and drag-and-drop Applications link
+          mkdir -p dmg_staging
+          cp -R "$APP_PATH" dmg_staging/AetherDrop.app
+          ln -s /Applications dmg_staging/Applications
+
+          # 3. Create compressed disk image using hdiutil
+          hdiutil create -volname "AetherDrop" -srcfolder dmg_staging -ov -format UDZO AetherDrop-macOS.dmg
+          rm -rf dmg_staging
+
+          # 4. Verify file output
+          if [ ! -f "AetherDrop-macOS.dmg" ]; then
+            echo "Error: AetherDrop-macOS.dmg was not generated!"
+            exit 1
+          fi
+          ls -lh AetherDrop-macOS.dmg
+
+      - name: Upload macOS DMG Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AetherDrop-macOS
+          path: aetherdrop_app/AetherDrop-macOS.dmg
+          if-no-files-found: error
+
+  # =========================================================================
+  # 4. iOS IPA Build (macos-latest)
+  # =========================================================================
+  build-ios:
+    name: Build iOS IPA
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: aetherdrop_app
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build iOS Release Without Code Sign
+        run: flutter build ios --release --no-codesign
+
+      - name: Package Runner.app into Sideloadable IPA
+        run: |
+          # 1. Locate Runner.app
+          if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
+            echo "Error: build/ios/iphoneos/Runner.app not found!"
+            exit 1
+          fi
+          echo "Found compiled iOS bundle: build/ios/iphoneos/Runner.app"
+
+          # 2. Construct Payload directory structure required for standard .ipa packages
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+
+          # 3. Zip Payload into AetherDrop-iOS.ipa
+          zip -r -q AetherDrop-iOS.ipa Payload
+          rm -rf Payload
+
+          # 4. Verify output
+          if [ ! -f "AetherDrop-iOS.ipa" ]; then
+            echo "Error: AetherDrop-iOS.ipa was not generated!"
+            exit 1
+          fi
+          ls -lh AetherDrop-iOS.ipa
+
+      - name: Upload iOS IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AetherDrop-iOS
+          path: aetherdrop_app/AetherDrop-iOS.ipa
+          if-no-files-found: error
+
+  # =========================================================================
+  # 5. Publish to GitHub Release
+  # =========================================================================
+  publish-release:
+    name: Publish All Installers to GitHub Release
+    needs: [build-android, build-windows, build-macos, build-ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Platform Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Verify All 4 Native Installers
+        run: |
+          echo "Listing downloaded artifacts:"
+          ls -lh release-artifacts
+
+          # Verify each expected binary exists
+          REQUIRED_FILES=("AetherDrop-Android.apk" "AetherDrop-Windows-Setup.exe" "AetherDrop-macOS.dmg" "AetherDrop-iOS.ipa")
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "release-artifacts/$file" ]; then
+              echo "❌ Missing required installer: $file"
+              exit 1
+            fi
+            echo "✅ Verified: $file"
+          done
+
+      - name: Compute SHA-256 Checksums
+        run: |
+          cd release-artifacts
+          sha256sum AetherDrop-Android.apk AetherDrop-Windows-Setup.exe AetherDrop-macOS.dmg AetherDrop-iOS.ipa | tee SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Resolve Release Tag & Version
+        id: release_meta
+        run: |
+          TAG="${{ github.event.inputs.tag_name }}"
+          if [ -z "$TAG" ]; then
+            TAG="${{ github.ref_name }}"
+          fi
+          # Fallback for manual dispatches without tag or branch names
+          if [ -z "$TAG" ] || [ "$TAG" = "main" ] || [ "$TAG" = "master" ]; then
+            TAG="v1.0.0"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Resolved Release Tag: $TAG"
+
+      - name: Publish or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag }}
+          name: "AetherDrop ${{ steps.release_meta.outputs.tag }}"
+          body: |
+            # 🚀 AetherDrop ${{ steps.release_meta.outputs.tag }} Official Release
+
+            Cross-platform zero-cost Peer-to-Peer (P2P) ultra-fast file, folder, text, and clipboard transfer application.
+
+            ### 📦 Native 1-Click Installers
+            | Platform | Installer File | Installation Method |
+            | :--- | :--- | :--- |
+            | 🤖 **Android** | [**`AetherDrop-Android.apk`**](https://github.com/${{ github.repository }}/releases/latest/download/AetherDrop-Android.apk) | Direct APK install for phones, tablets & TVs |
+            | 🪟 **Windows** | [**`AetherDrop-Windows-Setup.exe`**](https://github.com/${{ github.repository }}/releases/latest/download/AetherDrop-Windows-Setup.exe) | Single standalone setup executable (no admin needed) |
+            | 🍏 **macOS** | [**`AetherDrop-macOS.dmg`**](https://github.com/${{ github.repository }}/releases/latest/download/AetherDrop-macOS.dmg) | Drag-and-drop Apple disk image (Intel & Apple Silicon) |
+            | 📱 **iOS** | [**`AetherDrop-iOS.ipa`**](https://github.com/${{ github.repository }}/releases/latest/download/AetherDrop-iOS.ipa) | Sideload via AltStore / SideStore / Scarlet / Sideloadly |
+
+            ---
+            *Built automatically across Linux, Windows, and macOS cloud runners via GitHub Actions.*
+          draft: false
+          prerelease: false
+          make_latest: true
+          generate_release_notes: true
+          files: |
+            release-artifacts/AetherDrop-Android.apk
+            release-artifacts/AetherDrop-Windows-Setup.exe
+            release-artifacts/AetherDrop-macOS.dmg
+            release-artifacts/AetherDrop-iOS.ipa
+            release-artifacts/SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

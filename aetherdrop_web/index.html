@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AetherDrop — Zero-Cost Ultra-Fast P2P Warp Transfer</title>
+  <meta name="description" content="Send any file with unlimited size and zero cloud storage. Direct peer-to-peer warp transfers powered by WebRTC & local Wi-Fi sockets with AES-256-GCM encryption. Native for macOS, Windows, Android, and iOS.">
+  <meta name="keywords" content="AetherDrop, peer-to-peer file transfer, P2P, AirDrop alternative, WebRTC, zero cloud, unlimited file size, encrypted file transfer, cross-platform">
+  
+  <!-- Open Graph / Social Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="AetherDrop — Zero-Cost Ultra-Fast P2P Warp Transfer">
+  <meta property="og:description" content="Send any file. Unlimited size. Zero cloud storage. Native for macOS, Windows, Android, and iOS.">
+  <meta property="og:image" content="https://aetherdrop.network/og-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AetherDrop — P2P Warp Transfer">
+  <meta name="twitter:description" content="Direct device-to-device file transfer with zero cloud retention and AES-256-GCM encryption.">
+  <meta name="theme-color" content="#0A0A0A">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%230A0A0A' stroke='%2300F0FF' stroke-width='4'/><polygon points='50,18 78,72 50,58 22,72' fill='%2300F0FF'/><circle cx='50' cy='50' r='10' fill='%237928CA'/></svg>">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient Glass Glow Gradients -->
+  <div class="ambient-glow glow-cyan" aria-hidden="true"></div>
+  <div class="ambient-glow glow-purple" aria-hidden="true"></div>
+  <div class="ambient-glow glow-emerald" aria-hidden="true"></div>
+
+  <!-- Sticky Glassmorphic Navbar -->
+  <header class="navbar-wrapper">
+    <div class="navbar container">
+      <!-- Brand Logo -->
+      <a href="#hero" class="brand">
+        <div class="brand-radar">
+          <span class="radar-sweep"></span>
+          <svg class="brand-icon" viewBox="0 0 32 32" fill="none">
+            <path d="M16 4L26 24L16 19L6 24L16 4Z" fill="url(#brandGrad)" />
+            <circle cx="16" cy="16" r="3" fill="#FFFFFF" />
+            <defs>
+              <linearGradient id="brandGrad" x1="6" y1="4" x2="26" y2="24" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00F0FF" />
+                <stop offset="1" stop-color="#7928CA" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Aether<span class="brand-accent">Drop</span></span>
+          <span class="version-tag">v1.0.0</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="nav-links" aria-label="Main Navigation">
+        <a href="#hero" class="nav-link active">Overview</a>
+        <a href="#downloads" class="nav-link">Downloads</a>
+        <a href="#ecosystem" class="nav-link">Live Network</a>
+        <a href="#sandbox" class="nav-link">Live Sandbox</a>
+        <a href="#architecture" class="nav-link">Zero Cloud</a>
+        <a href="#avatars" class="nav-link">Cyber Avatars</a>
+        <a href="#features" class="nav-link">Bento Tech</a>
+      </nav>
+
+      <!-- Nav Actions (Theme Switcher, OS Download Pill, Mobile Toggle) -->
+      <div class="nav-actions">
+        <!-- Interactive Theme Switcher (Dark / Light) -->
+        <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Light/Dark Theme" title="Toggle Theme (T)">
+          <svg class="theme-icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="theme-icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- Smart OS Quick Download Button in Nav -->
+        <button id="navSmartDownloadBtn" class="btn-nav-download" data-os="auto">
+          <span class="nav-btn-icon" id="navOsIcon">💻</span>
+          <span class="nav-btn-text" id="navOsLabel">Download</span>
+          <span class="nav-rec-dot" title="Auto-detected OS"></span>
+        </button>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="mobileMenuToggle" class="mobile-menu-btn" aria-label="Toggle Mobile Menu">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Navigation -->
+    <div id="mobileDrawer" class="mobile-drawer" aria-hidden="true">
+      <div class="mobile-drawer-inner">
+        <a href="#hero" class="mobile-link">Overview</a>
+        <a href="#downloads" class="mobile-link">Universal Downloads</a>
+        <a href="#ecosystem" class="mobile-link">Live Network Counter</a>
+        <a href="#sandbox" class="mobile-link">Browser Sandbox</a>
+        <a href="#architecture" class="mobile-link">Zero Cloud Architecture</a>
+        <a href="#avatars" class="mobile-link">Cyber Avatars & Ranks</a>
+        <a href="#features" class="mobile-link">Technical Specs</a>
+        <div class="mobile-drawer-download">
+          <button id="mobileSmartDownloadBtn" class="btn-primary w-full" data-os="auto">
+            <span>Download for Your Device</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- =====================================================================
+         HERO SECTION: Particle Beam Network & Universal Download Dock
+         ===================================================================== -->
+    <section id="hero" class="hero-section">
+      <div class="container hero-container">
+        <!-- Badge Pill -->
+        <div class="badge-pill" data-aos="fade-down">
+          <span class="pulse-indicator"></span>
+          <span class="badge-text">P2P ZERO-CLOUD WARP PROTOCOL &bull; 100% FREE FOREVER</span>
+        </div>
+
+        <!-- Main Headline -->
+        <h1 class="hero-title" data-aos="fade-up">
+          Send Any File. Unlimited Size.<br>
+          <span class="gradient-text">Zero Cloud Storage.</span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="100">
+          Direct device-to-device warp transmission powered by WebRTC & local Wi-Fi sockets. 
+          No 2GB file caps, no cloud retention, no monthly paywalls, and military-grade AES-256-GCM encryption.
+        </p>
+
+        <!-- Quick Feature Matrix Badges -->
+        <div class="hero-badges" data-aos="fade-up" data-aos-delay="150">
+          <div class="micro-badge">
+            <svg class="micro-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>0 Cloud Storage</span>
+          </div>
+          <div class="micro-badge">
+            <svg class="micro-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>Unlimited File Sizes</span>
+          </div>
+          <div class="micro-badge">
+            <svg class="micro-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>Local Gigabit Speed</span>
+          </div>
+          <div class="micro-badge">
+            <svg class="micro-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>AES-256-GCM Cipher</span>
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             ANIMATED P2P PARTICLE BEAM CANVAS & DEVICE CONSTELLATION
+             ===================================================================== -->
+        <div class="hero-canvas-wrapper" data-aos="zoom-in" data-aos-delay="200">
+          <canvas id="p2pBeamCanvas" class="p2p-beam-canvas" width="1000" height="420" aria-label="Interactive P2P Beam Network Canvas"></canvas>
+
+          <!-- Interactive Device Nodes Overlaid on Canvas -->
+          <div class="device-nodes-overlay">
+            <!-- MacBook Node -->
+            <div class="device-node device-mac" id="nodeMac" data-device="mac">
+              <div class="device-glow"></div>
+              <div class="device-frame">
+                <div class="device-screen">
+                  <div class="screen-header">
+                    <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                  </div>
+                  <div class="screen-body">
+                    <div class="warp-pulse-bar"></div>
+                    <span class="screen-file">8K_ProRes_Master.mov (48.2 GB)</span>
+                    <span class="screen-speed">1.24 GB/s &bull; Direct Socket</span>
+                  </div>
+                </div>
+                <div class="laptop-base"></div>
+              </div>
+              <div class="device-caption">
+                <span class="caption-icon">🍎</span>
+                <span class="caption-name">MacBook Pro M3 Max</span>
+              </div>
+            </div>
+
+            <!-- Windows PC Node -->
+            <div class="device-node device-win" id="nodeWin" data-device="windows">
+              <div class="device-glow"></div>
+              <div class="device-frame pc-rig">
+                <div class="pc-monitor">
+                  <div class="screen-body">
+                    <div class="warp-pulse-bar win-bar"></div>
+                    <span class="screen-file">Unreal_Project_v5.pak (112 GB)</span>
+                    <span class="screen-speed">Line-Speed LAN &bull; 0ms Delay</span>
+                  </div>
+                </div>
+                <div class="pc-stand"></div>
+              </div>
+              <div class="device-caption">
+                <span class="caption-icon">🪟</span>
+                <span class="caption-name">Windows 11 Workstation</span>
+              </div>
+            </div>
+
+            <!-- iPhone Node -->
+            <div class="device-node device-ios" id="nodeIos" data-device="ios">
+              <div class="device-glow"></div>
+              <div class="device-frame phone-frame">
+                <div class="phone-dynamic-island"></div>
+                <div class="screen-body mobile-screen">
+                  <div class="radar-ping-dot"></div>
+                  <span class="screen-file">RAW_Photo_Pack.zip</span>
+                  <span class="screen-speed">320 MB/s P2P</span>
+                </div>
+              </div>
+              <div class="device-caption">
+                <span class="caption-icon">📱</span>
+                <span class="caption-name">iPhone 16 Pro</span>
+              </div>
+            </div>
+
+            <!-- Android Phone Node -->
+            <div class="device-node device-android" id="nodeAndroid" data-device="android">
+              <div class="device-glow"></div>
+              <div class="device-frame phone-frame android-frame">
+                <div class="phone-pinhole"></div>
+                <div class="screen-body mobile-screen">
+                  <div class="radar-ping-dot emerald"></div>
+                  <span class="screen-file">Backup_Archive.tar.gz</span>
+                  <span class="screen-speed">480 MB/s Wi-Fi 7</span>
+                </div>
+              </div>
+              <div class="device-caption">
+                <span class="caption-icon">🤖</span>
+                <span class="caption-name">Android Flagship</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Canvas Live Data Telemetry Center Tag -->
+          <div class="canvas-telemetry">
+            <span class="telemetry-dot"></span>
+            <span class="telemetry-label">AES-256-GCM Ephemeral Channel &bull; WebRTC DataChannel + LAN Socket</span>
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             FEATURE 1: UNIVERSAL DOWNLOAD DOCK (4 Dedicated Native Platform Cards)
+             ===================================================================== -->
+        <div id="downloads" class="download-dock-section" data-aos="fade-up" data-aos-delay="250">
+          <div class="dock-header">
+            <h2 class="dock-title">Universal Native Download Dock</h2>
+            <p class="dock-subtitle">Choose your platform for instantaneous direct install. No App Store accounts or registration required.</p>
+          </div>
+
+          <div class="download-grid">
+            <!-- 1. macOS Card -->
+            <div class="download-card" id="cardMac" data-platform="mac">
+              <div class="rec-badge" id="recBadgeMac">
+                <span class="sparkle">✦</span> Recommended for your device
+              </div>
+              <div class="card-icon-wrapper mac-glow">
+                <svg class="os-svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.74 1.04-1.77.92-2.8-.9.04-2 .61-2.65 1.37-.58.67-1.09 1.74-.96 2.76 1.02.08 2.07-.55 2.69-1.33z"/>
+                </svg>
+              </div>
+              <div class="card-body">
+                <h3 class="card-os-title">macOS</h3>
+                <span class="card-file-type">Apple Silicon (M1/M2/M3/M4) &amp; Intel Universal</span>
+                <div class="card-meta">
+                  <span class="meta-tag">Universal .dmg</span>
+                  <span class="meta-tag">v1.0.0</span>
+                </div>
+                <p class="card-desc">Zero-permission high performance build optimized for Apple Silicon neural accelerators &amp; CoreFoundation sockets.</p>
+              </div>
+              <button class="btn-download-action" data-download="mac">
+                <span class="btn-dl-icon">⬇</span>
+                <span>Download for macOS</span>
+              </button>
+              <div class="card-footer-tip">
+                <code>SHA-256 Verified</code> &bull; Drag &amp; Drop Install
+              </div>
+            </div>
+
+            <!-- 2. Windows Card -->
+            <div class="download-card" id="cardWindows" data-platform="windows">
+              <div class="rec-badge" id="recBadgeWindows">
+                <span class="sparkle">✦</span> Recommended for your device
+              </div>
+              <div class="card-icon-wrapper win-glow">
+                <svg class="os-svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801"/>
+                </svg>
+              </div>
+              <div class="card-body">
+                <h3 class="card-os-title">Windows</h3>
+                <span class="card-file-type">Native 64-bit Installer (Win 10 / 11)</span>
+                <div class="card-meta">
+                  <span class="meta-tag">Native .exe</span>
+                  <span class="meta-tag">x86_64</span>
+                </div>
+                <p class="card-desc">Blazing-fast Win32 network stack with native Windows Defender bypass, shell menu integration, and silent auto-updates.</p>
+              </div>
+              <button class="btn-download-action" data-download="windows">
+                <span class="btn-dl-icon">⬇</span>
+                <span>Download for Windows</span>
+              </button>
+              <div class="card-footer-tip">
+                <code>SHA-256 Verified</code> &bull; 1-Click Setup
+              </div>
+            </div>
+
+            <!-- 3. Android Card -->
+            <div class="download-card" id="cardAndroid" data-platform="android">
+              <div class="rec-badge" id="recBadgeAndroid">
+                <span class="sparkle">✦</span> Recommended for your device
+              </div>
+              <div class="card-icon-wrapper android-glow">
+                <svg class="os-svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.411 13.8559 8.1 12 8.1s-3.5902.311-5.1368.8497L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396"/>
+                </svg>
+              </div>
+              <div class="card-body">
+                <h3 class="card-os-title">Android</h3>
+                <span class="card-file-type">Direct Native Package (.apk)</span>
+                <div class="card-meta">
+                  <span class="meta-tag">Universal .apk</span>
+                  <span class="meta-tag">Android 9+</span>
+                </div>
+                <p class="card-desc">No Google Play tracking. Direct high-speed Wi-Fi Direct and mDNS LAN discovery with background transfer services.</p>
+              </div>
+              <button class="btn-download-action" data-download="android">
+                <span class="btn-dl-icon">⬇</span>
+                <span>Download for Android</span>
+              </button>
+              <div class="card-footer-tip">
+                <code>Direct APK</code> &bull; Sideload / Install Instantly
+              </div>
+            </div>
+
+            <!-- 4. iOS / iPhone Card -->
+            <div class="download-card" id="cardIos" data-platform="ios">
+              <div class="rec-badge" id="recBadgeIos">
+                <span class="sparkle">✦</span> Recommended for your device
+              </div>
+              <div class="card-icon-wrapper ios-glow">
+                <svg class="os-svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+              </div>
+              <div class="card-body">
+                <h3 class="card-os-title">iPhone / iOS</h3>
+                <span class="card-file-type">Native iOS Build (.ipa) &amp; TestFlight</span>
+                <div class="card-meta">
+                  <span class="meta-tag">iOS 16+</span>
+                  <span class="meta-tag">TestFlight / IPA</span>
+                </div>
+                <p class="card-desc">Native Swift &amp; WebRTC engine. Install instantly through Apple TestFlight or wireless sideloading via AltStore &amp; SideStore.</p>
+              </div>
+              <div class="card-dual-actions">
+                <button class="btn-download-action btn-ios-dl" data-download="ios">
+                  <span class="btn-dl-icon">⬇</span>
+                  <span>Download .IPA</span>
+                </button>
+                <button class="btn-guide-action" id="openIosGuideBtn">
+                  <span>Sideload Guide</span>
+                </button>
+              </div>
+              <div class="card-footer-tip">
+                <code>TestFlight &bull; AltStore</code> &bull; 60s Setup
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         FEATURE 2: SUPABASE LIVE ECOSYSTEM COUNTER BAR
+         ===================================================================== -->
+    <section id="ecosystem" class="ecosystem-section">
+      <div class="container">
+        <div class="ecosystem-glass-bar">
+          <div class="ecosystem-header">
+            <div class="live-pill">
+              <span class="live-pulse"></span>
+              <span class="live-text" id="supabaseStatusText">Supabase Realtime Synchronized</span>
+            </div>
+            <span class="ecosystem-sub">Global Telemetry Stream &bull; Updates Every Millisecond</span>
+          </div>
+
+          <div class="counter-grid">
+            <!-- Counter 1: Total Nodes Online -->
+            <div class="counter-item">
+              <div class="counter-icon-wrap cyan-glow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <line x1="12" y1="2" x2="12" y2="4"></line>
+                  <line x1="12" y1="20" x2="12" y2="22"></line>
+                  <line x1="2" y1="12" x2="4" y2="12"></line>
+                  <line x1="20" y1="12" x2="22" y2="12"></line>
+                </svg>
+              </div>
+              <div class="counter-content">
+                <div class="counter-number" id="statNodesOnline">14,892</div>
+                <div class="counter-label">Active Nodes Online</div>
+              </div>
+            </div>
+
+            <!-- Counter 2: Total Transfers Completed -->
+            <div class="counter-item">
+              <div class="counter-icon-wrap purple-glow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+              <div class="counter-content">
+                <div class="counter-number" id="statTransfersCompleted">1,842,590</div>
+                <div class="counter-label">Transfers Completed</div>
+              </div>
+            </div>
+
+            <!-- Counter 3: Total Gigabytes Warped Globally -->
+            <div class="counter-item">
+              <div class="counter-icon-wrap gold-glow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                </svg>
+              </div>
+              <div class="counter-content">
+                <div class="counter-number" id="statGigabytesWarped">948,320<span class="unit"> GB</span></div>
+                <div class="counter-label">Data Warped Globally</div>
+              </div>
+            </div>
+
+            <!-- Counter 4: Average Transfer Speed -->
+            <div class="counter-item">
+              <div class="counter-icon-wrap emerald-glow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
+              <div class="counter-content">
+                <div class="counter-number" id="statAvgSpeed">1.28<span class="unit"> GB/s</span></div>
+                <div class="counter-label">Average LAN Warp Speed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         FEATURE 2: INTERACTIVE BROWSER SANDBOX WIDGET
+         ===================================================================== -->
+    <section id="sandbox" class="sandbox-section">
+      <div class="container">
+        <div class="section-badge-center">
+          <span class="section-pill">LIVE BROWSER TEST RIG</span>
+          <h2 class="section-title">Test AetherDrop in Your Browser Right Now</h2>
+          <p class="section-desc">Drag any file or press <code>Ctrl+V</code> to paste clipboard text. Experience client-side chunking, encryption simulation, and instant peer warping without installing anything.</p>
+        </div>
+
+        <div class="sandbox-card glass-panel">
+          <!-- Sandbox Top Control Bar -->
+          <div class="sandbox-header">
+            <div class="sandbox-status">
+              <span class="status-indicator"></span>
+              <span class="status-text">Simulated Mesh: <strong>Ready</strong> &bull; Latency: <strong>0.4ms</strong></span>
+            </div>
+            <div class="sandbox-actions">
+              <button id="sandboxPasteBtn" class="sandbox-chip-btn">
+                <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+                <span>Paste Clipboard (Ctrl+V)</span>
+              </button>
+              <button id="sandboxResetBtn" class="sandbox-chip-btn secondary">
+                <span>Reset Test</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sandbox Interactive Grid (Drag & Drop Zone + Peer Warp Simulation) -->
+          <div class="sandbox-grid">
+            <!-- Left: Interactive Drop Zone -->
+            <div class="sandbox-dropzone" id="sandboxDropzone">
+              <input type="file" id="sandboxFileInput" class="hidden-file-input" multiple>
+              <div class="dropzone-ambient-aura"></div>
+              
+              <div class="dropzone-content" id="dropzoneEmptyState">
+                <div class="dropzone-icon-pulse">
+                  <svg class="dropzone-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                </div>
+                <h4 class="dropzone-title">Drag &amp; Drop Any File Here</h4>
+                <p class="dropzone-text">Or <span class="highlight-link">browse files</span> from your computer &bull; No size limits</p>
+                <div class="dropzone-hints">
+                  <span class="hint-key">Ctrl + V to paste text / screenshots</span>
+                </div>
+              </div>
+
+              <!-- Active File Processing State -->
+              <div class="dropzone-active-state hidden" id="dropzoneActiveState">
+                <div class="file-chip">
+                  <div class="file-icon-box" id="simFileIcon">📄</div>
+                  <div class="file-details">
+                    <span class="file-name" id="simFileName">Sample_Master_Asset.raw</span>
+                    <span class="file-specs" id="simFileSpecs">24.8 MB &bull; 99 Chunks (256KB)</span>
+                  </div>
+                  <span class="file-badge-cipher">AES-256-GCM</span>
+                </div>
+
+                <!-- Live Warp Progress Engine -->
+                <div class="warp-progress-container">
+                  <div class="warp-meta-row">
+                    <span class="warp-stage" id="simWarpStage">Chunking binary stream...</span>
+                    <span class="warp-percent" id="simWarpPercent">0%</span>
+                  </div>
+                  <div class="warp-progress-track">
+                    <div class="warp-progress-fill" id="simProgressFill"></div>
+                    <div class="warp-glow-tip" id="simGlowTip"></div>
+                  </div>
+                  <div class="warp-telemetry-row">
+                    <span class="sim-speed" id="simSpeed">1,240 MB/s</span>
+                    <span class="sim-hash" id="simHash">SHA: calculating...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Simulated Peer Receiver Terminal -->
+            <div class="sandbox-terminal">
+              <div class="terminal-bar">
+                <div class="terminal-dots">
+                  <span class="tdot red"></span><span class="tdot yellow"></span><span class="tdot green"></span>
+                </div>
+                <span class="terminal-title">AetherDrop Peer-to-Peer DataChannel Stream</span>
+                <span class="terminal-badge">LIVE P2P</span>
+              </div>
+              <div class="terminal-console" id="terminalLogs">
+                <div class="log-line info">[System] AetherDrop WebRTC Engine initialized.</div>
+                <div class="log-line info">[mDNS] 4 local nodes detected via subnet broadcast.</div>
+                <div class="log-line success">[NAT] STUN ICE candidate paired (Google STUN 19302). Zero relay servers needed.</div>
+                <div class="log-line">[Security] Ephemeral ECDH X25519 keypair generated. Perfect Forward Secrecy active.</div>
+                <div class="log-line highlight">[Ready] Ready for warp transfer. Drop a file or paste text on the left!</div>
+              </div>
+
+              <!-- Real-time Transfer Summary Pill -->
+              <div class="terminal-footer">
+                <div class="peer-avatar-snippet">
+                  <div class="avatar-ring-mini cyan-ring">
+                    <span class="mini-avatar-face">⚡</span>
+                  </div>
+                  <div class="peer-text">
+                    <span class="peer-name">Connected Peer: Studio-MacStudio-M2</span>
+                    <span class="peer-proto">Direct Socket (Zero Cloud Storage)</span>
+                  </div>
+                </div>
+                <button class="btn-terminal-save" id="terminalActionBtn">Verified 100%</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         FEATURE 3: HOW IT WORKS (ZERO CLOUD STORAGE VS LEGACY TOOLS)
+         ===================================================================== -->
+    <section id="architecture" class="architecture-section">
+      <div class="container">
+        <div class="section-badge-center">
+          <span class="section-pill">ZERO CLOUD RETENTION ARCHITECTURE</span>
+          <h2 class="section-title">Why AetherDrop Is Free Forever With Unlimited File Sizes</h2>
+          <p class="section-desc">Legacy cloud tools make you upload files to remote servers, charge \$12/month for 2GB+ caps, and keep your sensitive files on their disks. AetherDrop routes bytes directly between your devices.</p>
+        </div>
+
+        <div class="comparison-grid">
+          <!-- Legacy Cloud Upload Card -->
+          <div class="comp-card legacy-card" data-aos="fade-right">
+            <div class="comp-badge legacy-badge">
+              <span>✕ LEGACY CLOUD TOOLS (Drive, WeTransfer, Dropbox)</span>
+            </div>
+            <div class="comp-flow">
+              <div class="flow-step">
+                <div class="step-icon">💻</div>
+                <span class="step-title">Your Laptop</span>
+              </div>
+              <div class="flow-arrow slow-arrow">
+                <span class="arrow-label">Slow Upload 🐌</span>
+                <div class="dotted-line"></div>
+              </div>
+              <div class="flow-step server-step">
+                <div class="step-icon server-icon">🏢</div>
+                <span class="step-title">Central Server (US-East)</span>
+                <span class="step-warning">Stores your private data &bull; 2GB Paywall</span>
+              </div>
+              <div class="flow-arrow slow-arrow">
+                <span class="arrow-label">Double Delay ⏱</span>
+                <div class="dotted-line"></div>
+              </div>
+              <div class="flow-step">
+                <div class="step-icon">📱</div>
+                <span class="step-title">Recipient Phone</span>
+              </div>
+            </div>
+
+            <ul class="comp-list legacy-list">
+              <li>
+                <span class="bullet-cross">✕</span>
+                <span><strong>Massive Cloud Server Costs:</strong> Providers pass massive disk hosting fees onto you with \$12-\$25/mo subscriptions.</span>
+              </li>
+              <li>
+                <span class="bullet-cross">✕</span>
+                <span><strong>Strict File Size Limits:</strong> Capped at 2GB unless you upgrade to expensive business plans.</span>
+              </li>
+              <li>
+                <span class="bullet-cross">✕</span>
+                <span><strong>Double Transmission Latency:</strong> You must wait for 100% upload to finish before the receiver can even start downloading.</span>
+              </li>
+              <li>
+                <span class="bullet-cross">✕</span>
+                <span><strong>Zero Privacy:</strong> Files linger indefinitely on corporate cloud storage disks.</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- AetherDrop Direct P2P Card -->
+          <div class="comp-card aether-card" data-aos="fade-left">
+            <div class="comp-badge aether-badge">
+              <span>✓ AETHERDROP DIRECT P2P WARP PROTOCOL</span>
+            </div>
+            <div class="comp-flow">
+              <div class="flow-step">
+                <div class="step-icon glow-cyan">💻</div>
+                <span class="step-title">Sender Device</span>
+              </div>
+              <div class="flow-arrow warp-arrow">
+                <span class="arrow-label warp-label">Direct Socket / WebRTC ⚡</span>
+                <div class="quantum-beam"></div>
+                <span class="arrow-sub">0 Bytes Cloud Storage &bull; Line-Speed Gigabit</span>
+              </div>
+              <div class="flow-step">
+                <div class="step-icon glow-purple">📱</div>
+                <span class="step-title">Receiver Device</span>
+              </div>
+            </div>
+
+            <ul class="comp-list aether-list">
+              <li>
+                <span class="bullet-check">✓</span>
+                <span><strong>100% Free Forever:</strong> Because 0 bytes ever touch a cloud storage server, server bandwidth costs are exactly \$0.00!</span>
+              </li>
+              <li>
+                <span class="bullet-check">✓</span>
+                <span><strong>No File Size Caps:</strong> Warp 50GB, 500GB, or multi-terabyte raw directories without ever hitting a limit.</span>
+              </li>
+              <li>
+                <span class="bullet-check">✓</span>
+                <span><strong>Blazing Line-Speed Throughput:</strong> Streams directly over 5GHz Wi-Fi 7 / 2.5G Ethernet sockets at up to 1.2+ GB/s.</span>
+              </li>
+              <li>
+                <span class="bullet-check">✓</span>
+                <span><strong>Cryptographic Ephemeral Security:</strong> Encrypted on-device using AES-256-GCM. Decryption keys never leave your devices.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         FEATURE 3: INTERACTIVE AVATAR & RANK SHOWCASE (Level 1 to 50)
+         ===================================================================== -->
+    <section id="avatars" class="avatars-section">
+      <div class="container">
+        <div class="section-badge-center">
+          <span class="section-pill">GAMIFIED PROGRESSION TREE</span>
+          <h2 class="section-title">12 Unlockable Cyber Avatars &amp; Rank Progression</h2>
+          <p class="section-desc">Every gigabyte warped awards Warp XP (WXP). Level up from Spark Node to Singularity Core to unlock animated cyber avatar frames, glowing halos, and status badges.</p>
+        </div>
+
+        <!-- Interactive Level Progression Slider -->
+        <div class="rank-slider-card glass-panel" data-aos="zoom-in">
+          <div class="slider-header-row">
+            <div class="rank-title-group">
+              <span class="rank-pretitle">CURRENT PROGRESSION LEVEL</span>
+              <div class="rank-hero-name" id="sliderRankTitle">Spark Node</div>
+              <div class="rank-xp-info" id="sliderXpInfo">0 / 100 WXP &bull; 100 WXP needed for next rank</div>
+            </div>
+
+            <!-- Dynamic Live Avatar Preview with Level-Scaled Rank Ring -->
+            <div class="avatar-hero-preview">
+              <div class="avatar-halo" id="avatarHaloGlow"></div>
+              <div class="avatar-ring-frame ring-level-1" id="avatarPreviewRing">
+                <div class="avatar-face-svg" id="avatarPreviewFace">
+                  <!-- Dynamic SVG Avatar Injected Here -->
+                </div>
+              </div>
+              <div class="avatar-level-tag" id="avatarLevelTag">LVL 1</div>
+            </div>
+          </div>
+
+          <!-- Range Slider Control -->
+          <div class="slider-control-box">
+            <div class="slider-marks">
+              <span class="mark" data-lvl="1">Lvl 1</span>
+              <span class="mark" data-lvl="5">Lvl 5</span>
+              <span class="mark" data-lvl="10">Lvl 10</span>
+              <span class="mark" data-lvl="15">Lvl 15</span>
+              <span class="mark" data-lvl="25">Lvl 25</span>
+              <span class="mark" data-lvl="35">Lvl 35</span>
+              <span class="mark highlight-gold" data-lvl="50">Lvl 50</span>
+            </div>
+            <input type="range" id="rankScrubber" class="rank-scrubber" min="1" max="50" value="1" step="1">
+            <div class="slider-instruction">
+              <span>Drag slider to preview unlocked cyber frames, lore, and titles &rarr;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 12 Built-In Procedural Cyber Avatars Grid -->
+        <div class="avatars-grid" id="avatarsGrid">
+          <!-- Avatars will be dynamically populated & updated by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         FEATURE BENTO: HIGH-CRAFT TECHNICAL SPECIFICATIONS
+         ===================================================================== -->
+    <section id="features" class="bento-section">
+      <div class="container">
+        <div class="section-badge-center">
+          <span class="section-pill">SYSTEM ARCHITECTURE</span>
+          <h2 class="section-title">Engineered for Sub-Millisecond Precision</h2>
+          <p class="section-desc">Six structural pillars designed for raw performance, uncrackable encryption, and frictionless usability.</p>
+        </div>
+
+        <div class="bento-grid">
+          <!-- Bento 1: Dual Socket + WebRTC Switching (Large 2 Col) -->
+          <div class="bento-card bento-span-2">
+            <div class="bento-aura cyan"></div>
+            <div class="bento-icon-box">⚡</div>
+            <div class="bento-content">
+              <h3 class="bento-title">Smart Dual-Engine Auto-Switching</h3>
+              <p class="bento-text">When devices share the same local network, AetherDrop automatically bypasses WebRTC and spins up direct Raw TCP Sockets over 5GHz Wi-Fi / Ethernet at 1.2+ GB/s. When across separate networks, WebRTC STUN/TURN hole-punching activates seamlessly.</p>
+              <div class="tech-tags">
+                <span class="tag">Raw TCP Sockets</span>
+                <span class="tag">WebRTC DataChannel</span>
+                <span class="tag">mDNS / UDP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento 2: Military-Grade AES-256-GCM -->
+          <div class="bento-card">
+            <div class="bento-aura purple"></div>
+            <div class="bento-icon-box">🔐</div>
+            <div class="bento-content">
+              <h3 class="bento-title">AES-256-GCM Zero-Knowledge</h3>
+              <p class="bento-text">Every warp session negotiates ephemeral Elliptic Curve (X25519) keypairs with authenticated Galois/Counter Mode. Even if packets are intercepted over coffee shop Wi-Fi, they are mathematically indistinguishable from random noise.</p>
+              <div class="tech-tags">
+                <span class="tag">X25519 ECDH</span>
+                <span class="tag">PFS (Forward Secrecy)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento 3: 256KB Chunk Engine & Checksums -->
+          <div class="bento-card">
+            <div class="bento-aura emerald"></div>
+            <div class="bento-icon-box">🧩</div>
+            <div class="bento-content">
+              <h3 class="bento-title">256 KB Adaptive Chunk Pipeline</h3>
+              <p class="bento-text">Files are sliced into optimal 262,144 byte binary chunks preventing WebRTC buffer bottlenecks. Each chunk carries a 32-bit CRC with instant parallel assembly and automatic stream resume if a connection dips.</p>
+              <div class="tech-tags">
+                <span class="tag">256KB Chunks</span>
+                <span class="tag">SHA-256 Bit-Check</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento 4: Co-Op Streaks & XP Gamification (Large 2 Col) -->
+          <div class="bento-card bento-span-2">
+            <div class="bento-aura gold"></div>
+            <div class="bento-icon-box">🔥</div>
+            <div class="bento-content">
+              <h3 class="bento-title">Daily Co-Op Streaks &amp; Supabase Realtime Synergy</h3>
+              <p class="bento-text">Send files with your teammates to trigger multi-day Co-Op Warp Streaks. Transfers earn WXP, climb the global ecosystem leaderboard, and unlock rare cyber-avatar cosmetics tracked in real time via Supabase Postgres.</p>
+              <div class="tech-tags">
+                <span class="tag">Co-Op Streaks</span>
+                <span class="tag">Realtime Leaderboards</span>
+                <span class="tag">Warp XP Engine</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         CALL TO ACTION: FINAL UNIVERSAL DOWNLOAD BAR
+         ===================================================================== -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-glass-box" data-aos="zoom-in">
+          <div class="cta-content">
+            <div class="cta-badge">✦ INSTANT ZERO-SETUP INSTALLATION</div>
+            <h2 class="cta-title">Start Warping Files at Light-Speed Today</h2>
+            <p class="cta-desc">Free forever. Unlimited sizes. Zero accounts required. Download native binaries for your Mac, PC, Android, or iPhone in seconds.</p>
+            
+            <div class="cta-button-row">
+              <button class="btn-primary cta-btn" data-download="auto">
+                <span class="cta-btn-icon" id="ctaOsIcon">🚀</span>
+                <span id="ctaOsText">Download AetherDrop Native</span>
+              </button>
+              <a href="https://github.com/YOUR_GITHUB_USERNAME/aetherdrop" target="_blank" rel="noopener noreferrer" class="btn-secondary cta-gh-btn">
+                <svg class="gh-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                <span>GitHub Repository</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =====================================================================
+       FOOTER
+       ===================================================================== -->
+  <footer class="footer">
+    <div class="container footer-container">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <svg class="brand-icon-sm" viewBox="0 0 32 32" fill="none">
+            <path d="M16 4L26 24L16 19L6 24L16 4Z" fill="#00F0FF" />
+            <circle cx="16" cy="16" r="3" fill="#FFFFFF" />
+          </svg>
+          <span class="footer-title">Aether<span class="cyan">Drop</span></span>
+        </div>
+        <p class="footer-motto">Zero-Cost Ultra-Fast Peer-to-Peer Warp Transfer Engine.</p>
+        <span class="footer-copy">&copy; 2026 AetherDrop Protocol. Open-Source under MIT License.</span>
+      </div>
+
+      <div class="footer-links-grid">
+        <div class="footer-col">
+          <span class="col-head">Native Binaries</span>
+          <a href="#downloads" data-download="mac">macOS (.dmg)</a>
+          <a href="#downloads" data-download="windows">Windows (.exe)</a>
+          <a href="#downloads" data-download="android">Android (.apk)</a>
+          <a href="#downloads" data-download="ios">iOS (.ipa)</a>
+        </div>
+        <div class="footer-col">
+          <span class="col-head">Ecosystem</span>
+          <a href="#ecosystem">Supabase Telemetry</a>
+          <a href="#sandbox">Browser Test Sandbox</a>
+          <a href="#avatars">Progression Avatars</a>
+          <a href="#architecture">Zero Cloud Whitepaper</a>
+        </div>
+        <div class="footer-col">
+          <span class="col-head">Security &amp; Specs</span>
+          <a href="#features">AES-256-GCM Spec</a>
+          <a href="#features">WebRTC STUN/TURN</a>
+          <a href="#features">mDNS Local Discovery</a>
+          <a href="https://github.com/YOUR_GITHUB_USERNAME/aetherdrop" target="_blank" rel="noopener noreferrer">Source Code</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- =====================================================================
+       MODAL: iOS SIDELOAD & TESTFLIGHT GUIDE
+       ===================================================================== -->
+  <div id="iosGuideModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card glass-panel" role="dialog" aria-modal="true" aria-labelledby="iosModalTitle">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-icon">📱</span>
+          <h3 id="iosModalTitle" class="modal-title">iOS Installation &amp; Sideload Guide</h3>
+        </div>
+        <button id="closeIosModalBtn" class="modal-close-btn" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="testflight">1. Apple TestFlight</button>
+        <button class="modal-tab" data-tab="altstore">2. AltStore / SideStore</button>
+        <button class="modal-tab" data-tab="directipa">3. Direct .IPA Download</button>
+      </div>
+
+      <div class="modal-tab-content active" id="tabContentTestflight">
+        <div class="guide-step">
+          <span class="step-num">1</span>
+          <div class="step-info">
+            <strong>Install TestFlight from Apple App Store</strong>
+            <p>Download Apple's official free TestFlight app onto your iPhone or iPad.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <span class="step-num">2</span>
+          <div class="step-info">
+            <strong>Join the AetherDrop Public Beta</strong>
+            <p>Tap the invitation link below to accept the beta build with instant automatic updates.</p>
+          </div>
+        </div>
+        <a href="https://testflight.apple.com" target="_blank" rel="noopener noreferrer" class="btn-primary w-full text-center">
+          <span>Open Apple TestFlight Invitation</span>
+        </a>
+      </div>
+
+      <div class="modal-tab-content" id="tabContentAltstore">
+        <div class="guide-step">
+          <span class="step-num">1</span>
+          <div class="step-info">
+            <strong>Wireless Sideloading via AltStore or SideStore</strong>
+            <p>Download the native <code>AetherDrop-iOS.ipa</code> file directly to your Files app.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <span class="step-num">2</span>
+          <div class="step-info">
+            <strong>Install in 1 Click</strong>
+            <p>Open AltStore / SideStore / Scarlet, tap "+" and select the downloaded IPA. It refreshes automatically over local Wi-Fi!</p>
+          </div>
+        </div>
+        <button class="btn-primary w-full" data-download="ios">
+          <span>Download AetherDrop-iOS.ipa</span>
+        </button>
+      </div>
+
+      <div class="modal-tab-content" id="tabContentDirectipa">
+        <p class="tab-desc">Direct unsigned native IPA package for developer provisioning, Sideloadly, Xcode, or enterprise deployment.</p>
+        <div class="sha-box">
+          <span class="sha-label">SHA-256 Checksum:</span>
+          <code class="sha-code" id="iosModalSha">6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b</code>
+        </div>
+        <button class="btn-primary w-full" data-download="ios">
+          <span>Download AetherDrop-iOS.ipa (Direct)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       GLASSMORPHIC TOAST NOTIFICATION CONTAINER
+       ===================================================================== -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
+
